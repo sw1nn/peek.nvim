@@ -1,6 +1,6 @@
 # peek.nvim
 
-*Markdown preview plugin for [Neovim](https://github.com/neovim/neovim)*
+_Markdown preview plugin for [Neovim](https://github.com/neovim/neovim)_
 
 ![preview](media/peek.jpg)
 
@@ -10,7 +10,11 @@
 - synchronized scrolling
 - github-style look
 - [TeX](https://github.com/KaTeX/KaTeX) math
-- [Mermaid](https://github.com/mermaid-js/mermaid) diagrams
+- [Mermaid](https://github.com/mermaid-js/mermaid) diagrams with pan, zoom, fit-to-width, and copy source controls
+- [GitHub-style alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts) (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
+- code block language badges and copy-to-clipboard
+- heading anchor links on hover
+- font size scaling (`Ctrl+=` / `Ctrl+-` / `Ctrl+0` in webview mode)
 
 ### :battery: Requirements
 
@@ -75,11 +79,11 @@ specify browser along with arguments:
 
 ### :bulb: Usage
 
-| method ||
-|-|-|
-| open    | Open preview window                                 |
-| close   | Close preview window                                |
-| is_open | Returns `true` if preview window is currently open  |
+| method  |                                                    |
+| ------- | -------------------------------------------------- |
+| open    | Open preview window                                |
+| close   | Close preview window                               |
+| is_open | Returns `true` if preview window is currently open |
 
 Example command setup:
 
@@ -90,14 +94,17 @@ vim.api.nvim_create_user_command('PeekClose', require('peek').close, {})
 
 The following keybinds are active when preview window is focused:
 
-| key ||
-|-|-|
-| k | scroll up               |
-| j | scroll down             |
-| u | scroll up half a page   |
-| d | scroll down half a page |
-| g | scroll to top           |
-| G | scroll to bottom        |
+| key      |                         |
+| -------- | ----------------------- |
+| k        | scroll up               |
+| j        | scroll down             |
+| u        | scroll up half a page   |
+| d        | scroll down half a page |
+| g        | scroll to top           |
+| G        | scroll to bottom        |
+| Ctrl + = | zoom in (webview only)  |
+| Ctrl + - | zoom out (webview only) |
+| Ctrl + 0 | reset zoom (webview only) |
 
 ### :mag: Preview window
 

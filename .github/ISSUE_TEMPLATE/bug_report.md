@@ -4,7 +4,6 @@ about: Create a report to help us improve
 title: ''
 labels: bug
 assignees: ''
-
 ---
 
 **Describe the bug**
@@ -20,15 +19,22 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - `nvim --version`:
+
+- OS: [e.g. iOS]
+- `nvim --version`:
+
 ```
 ```
- - `deno --version`:
+
+- `deno --version`:
+
 ```
 ```
- - plugin setup:
+
+- plugin setup:
+
 ```lua
 ```
+
 **Additional context**
 Add any other context about the problem here.

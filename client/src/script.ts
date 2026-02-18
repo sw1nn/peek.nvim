@@ -87,6 +87,44 @@ addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const COPY_SVG =
+    '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>';
+  const CHECK_SVG =
+    '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg>';
+
+  function showCopiedFeedback(btn: HTMLElement) {
+    btn.innerHTML = CHECK_SVG;
+    btn.classList.add('peek-copy-btn--copied');
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'peek-tooltip';
+    tooltip.textContent = 'Copied!';
+    document.body.appendChild(tooltip);
+
+    const rect = btn.getBoundingClientRect();
+    tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+    tooltip.style.top = `${rect.top - tooltip.offsetHeight - 6}px`;
+    requestAnimationFrame(() => tooltip.classList.add('peek-tooltip--visible'));
+
+    setTimeout(() => {
+      tooltip.remove();
+      btn.innerHTML = COPY_SVG;
+      btn.classList.remove('peek-copy-btn--copied');
+    }, 2000);
+  }
+
+  markdownBody.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement).closest('.peek-copy-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+
+    const pre = btn.parentElement?.querySelector('pre code') as HTMLElement | null;
+    if (!pre) return;
+
+    navigator.clipboard.writeText(pre.textContent || '').then(() => {
+      showCopiedFeedback(btn);
+    });
+  });
+
   onload = () => {
     const item = sessionStorage.getItem('session');
     if (item) {
@@ -142,6 +180,124 @@ addEventListener('DOMContentLoaded', () => {
   const onPreview = (() => {
     mermaid.init();
 
+    type MermaidState = { scale: number; tx: number; ty: number };
+    const mermaidStates = new WeakMap<Element, MermaidState>();
+    const PAN_STEP = 50;
+    const ZOOM_STEP = 0.15;
+    const ZOOM_MIN = 0.25;
+    const ZOOM_MAX = 4;
+
+    function getMermaidState(container: Element): MermaidState {
+      let state = mermaidStates.get(container);
+      if (!state) {
+        state = { scale: 1, tx: 0, ty: 0 };
+        mermaidStates.set(container, state);
+      }
+      return state;
+    }
+
+    function applyMermaidTransform(container: Element) {
+      const viewport = container.querySelector('.peek-mermaid-viewport') as HTMLElement | null;
+      if (!viewport) return;
+      const state = getMermaidState(container);
+      viewport.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
+    }
+
+    function injectMermaidControls(container: Element) {
+      if (container.querySelector('.peek-mermaid-toolbar')) return;
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'peek-mermaid-toolbar';
+      toolbar.innerHTML = [
+        '<button class="peek-mermaid-btn" data-action="fit" title="Fit to width">',
+        '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.56 7h10.88l-2.22-2.22a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l3.5 3.5a.75.75 0 0 1 0 1.06l-3.5 3.5a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l2.22-2.22H2.56l2.22 2.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215l-3.5-3.5a.75.75 0 0 1 0-1.06Z"/></svg>',
+        '</button>',
+        '<button class="peek-mermaid-btn" data-action="copy-source" title="Copy source">',
+        '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>',
+        '</button>',
+      ].join('');
+
+      const nav = document.createElement('div');
+      nav.className = 'peek-mermaid-nav';
+      nav.innerHTML = [
+        '<span></span>',
+        '<button class="peek-mermaid-btn" data-action="pan-up" title="Pan up">\u25B2</button>',
+        '<span></span>',
+        '<button class="peek-mermaid-btn" data-action="pan-left" title="Pan left">\u25C0</button>',
+        '<button class="peek-mermaid-btn" data-action="reset" title="Reset view">\u25CB</button>',
+        '<button class="peek-mermaid-btn" data-action="pan-right" title="Pan right">\u25B6</button>',
+        '<button class="peek-mermaid-btn" data-action="zoom-out" title="Zoom out">\u2212</button>',
+        '<button class="peek-mermaid-btn" data-action="pan-down" title="Pan down">\u25BC</button>',
+        '<button class="peek-mermaid-btn" data-action="zoom-in" title="Zoom in">+</button>',
+      ].join('');
+
+      container.appendChild(toolbar);
+      container.appendChild(nav);
+    }
+
+    markdownBody.addEventListener('click', (event) => {
+      const btn = (event.target as HTMLElement).closest('.peek-mermaid-btn') as HTMLElement | null;
+      if (!btn) return;
+
+      const container = btn.closest('.peek-mermaid-container');
+      if (!container) return;
+
+      const action = btn.getAttribute('data-action');
+      const state = getMermaidState(container);
+
+      switch (action) {
+        case 'pan-up':
+          state.ty += PAN_STEP;
+          break;
+        case 'pan-down':
+          state.ty -= PAN_STEP;
+          break;
+        case 'pan-left':
+          state.tx += PAN_STEP;
+          break;
+        case 'pan-right':
+          state.tx -= PAN_STEP;
+          break;
+        case 'zoom-in':
+          state.scale = Math.min(state.scale + ZOOM_STEP, ZOOM_MAX);
+          break;
+        case 'zoom-out':
+          state.scale = Math.max(state.scale - ZOOM_STEP, ZOOM_MIN);
+          break;
+        case 'reset':
+          state.scale = 1;
+          state.tx = 0;
+          state.ty = 0;
+          break;
+        case 'fit': {
+          const viewport = container.querySelector('.peek-mermaid-viewport') as HTMLElement | null;
+          const svgEl = viewport?.querySelector('svg');
+          if (viewport && svgEl) {
+            const containerWidth = container.clientWidth - 32;
+            const svgWidth = svgEl.getBoundingClientRect().width / state.scale;
+            if (svgWidth > 0) {
+              state.scale = containerWidth / svgWidth;
+              state.tx = 0;
+              state.ty = 0;
+            }
+          }
+          break;
+        }
+        case 'copy-source': {
+          const graphEl = container.querySelector('[data-graph-definition]');
+          const src = graphEl?.getAttribute('data-graph-definition') || '';
+          navigator.clipboard.writeText(src).then(() => {
+            showCopiedFeedback(btn);
+          });
+          return;
+        }
+        default:
+          return;
+      }
+
+      applyMermaidTransform(container);
+    });
+
     const renderMermaid = debounce(
       (() => {
         const parser = new DOMParser();
@@ -155,11 +311,17 @@ addEventListener('DOMContentLoaded', () => {
 
           if (svg) {
             const svgElement = parser.parseFromString(svg, 'text/html').body;
-            el.appendChild(svgElement);
+            const viewport = document.createElement('div');
+            viewport.className = 'peek-mermaid-viewport';
+            viewport.appendChild(svgElement);
+            el.appendChild(viewport);
             el.parentElement?.style.setProperty(
               'height',
               window.getComputedStyle(svgElement).getPropertyValue('height'),
             );
+            if (el.parentElement) {
+              injectMermaidControls(el.parentElement);
+            }
           }
         }
 
